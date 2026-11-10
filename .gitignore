@@ -1,0 +1,10 @@
+*.apk
+*.img
+*.bin
+start.adb.sh
+tonal_keys/
+backups/
+.venv/
+__pycache__/
+.tools/
+*.download

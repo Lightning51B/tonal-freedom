@@ -13,11 +13,28 @@
 # 1. boot.bin or boot.img - an unencryped raw binary of your android's environment's boot partition
 # 2. Magisk-v27.0.apk (or other magisk APK)
 
-# NOTE: Please run this as sudo
+# On macOS use: bash patcher-macos.sh
+# Runs without sudo on macOS and Linux.
 
 # ==========================================
 # Configuration & File Checks
 # ==========================================
+set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+HOST_OS=$(uname -s)
+case "$HOST_OS" in
+    Darwin|Linux) ;;
+    *) echo "Unsupported host OS: $HOST_OS" >&2; exit 1 ;;
+esac
+if [ "$(id -u)" = 0 ]; then
+    echo "Run without sudo; patching does not require root." >&2
+    exit 1
+fi
+for cmd in adb curl unzip python3; do
+    command -v "$cmd" >/dev/null || { echo "Missing $cmd; see MACOS.md." >&2; exit 1; }
+done
+
 ORIG_DIR="$PWD"
 MAGISK_APK="Magisk-v27.0.apk"
 TEXT_LAUNCHER_APK="textlauncher.apk"
@@ -26,21 +43,11 @@ SDK_VER=23
 CPU_ABI="arm64-v8a"
 
 # Define a permanent, self-contained key vault folder inside the user's home directory
-TARGET_USER=${SUDO_USER:-$USER}
-USER_HOME=$(eval echo ~$TARGET_USER)
-VAULT_DIR="$USER_HOME/tonal_keys"
+VAULT_DIR=${TONAL_KEY_DIR:-"$HOME/tonal_keys"}
+mkdir -p "$VAULT_DIR"
+VAULT_DIR=$(cd "$VAULT_DIR" && pwd)
 ADB_PUB_KEY="$VAULT_DIR/adbkey.pub"
 ADB_PRIV_KEY="$VAULT_DIR/adbkey"
-
-# Ensure script is run with sudo and is ran with bash shell
-if [ "$(id -u)" -ne 0 ]; then
-    echo "Error: This script must be run as root. Please use sudo or su." >&2
-    exit 1
-fi
-if [ -z "$BASH_VERSION" ]; then
-    echo "Error: This script must be run using the Bash shell." >&2
-    exit 1
-fi
 
 # Auto-detect whether the boot image is named .img or .bin
 if [ -f "boot.img" ]; then
@@ -52,50 +59,58 @@ else
     exit 1
 fi
 
-# Ensure Magisk APK is Present. 
-if [ ! -f "$MAGISK_APK" ]; then
-    # Uncomment for alternative later version of the v27.0.0.8 canary release
-    #MAGISK_APK="Magisk-v27.0.0.8.apk"
-    #wget https://github.com/topjohnwu/Magisk/releases/download/canary-27008/app-debug.apk -O $MAGISK_APK
-    wget https://github.com/topjohnwu/Magisk/releases/download/v27.0/Magisk-v27.0.apk -O $MAGISK_APK
-fi
-if [ ! -f "$MAGISK_APK" ]; then
-    echo "[!] Error: $MAGISK_APK not found!"
+if [ -e "$FINAL_OUT" ]; then
+    echo "Move the existing $FINAL_OUT before patching again." >&2
     exit 1
 fi
 
-# Ensure text launcher apk is present.
-if [ ! -f "$TEXT_LAUNCHER_APK" ]; then
-   wget https://github.com/ademar111190/TextLauncher/releases/download/1.4.1/app-release.apk -O $TEXT_LAUNCHER_APK
+if [ "$HOST_OS" = Darwin ]; then
+    MAGISKBOOT=${MAGISKBOOT:-"$SCRIPT_DIR/.tools/bin/magiskboot"}
+    if [ ! -x "$MAGISKBOOT" ]; then
+        echo "Build native magiskboot first: bash setup-macos.sh" >&2
+        exit 1
+    fi
+    # Resolve before switching to the temporary workspace.
+    MAGISKBOOT=$(cd "$(dirname "$MAGISKBOOT")" && pwd)/$(basename "$MAGISKBOOT")
+else
+    case "$(uname -m)" in
+        aarch64|arm64) HOST_ABI=arm64-v8a ;;
+        x86_64) HOST_ABI=x86_64 ;;
+        *) echo "Unsupported Linux host architecture" >&2; exit 1 ;;
+    esac
 fi
-if [ ! -f "$TEXT_LAUNCHER_APK" ]; then
-    echo "[!] Error: $TEXT_LAUNCHER_APK not found!"
-    exit 1
-fi
+
+# Download atomically so interrupted requests cannot become cached APKs.
+download_apk() {
+    local url=$1 destination=$2
+    if [ ! -s "$destination" ]; then
+        curl --fail --location --silent --show-error "$url" -o "$destination.download" || {
+            rm -f "$destination.download"
+            return 1
+        }
+        mv "$destination.download" "$destination"
+    fi
+    unzip -tq "$destination" >/dev/null
+}
+download_apk https://github.com/topjohnwu/Magisk/releases/download/v27.0/Magisk-v27.0.apk "$MAGISK_APK"
+download_apk https://github.com/ademar111190/TextLauncher/releases/download/1.4.1/app-release.apk "$TEXT_LAUNCHER_APK"
 
 # ==========================================
 # Phase 1: Golden Key Vault Generation
 # ==========================================
 echo "[*] Ensuring permanent ADB golden key exists..."
-mkdir -p "$VAULT_DIR"
-
-if [ ! -f "$ADB_PUB_KEY" ] || [ ! -f "$ADB_PRIV_KEY" ]; then
-    echo "    -> Generating a fresh, immutable ADB key pair in $VAULT_DIR..."
-    su - "$TARGET_USER" -c "adb kill-server >/dev/null 2>&1; rm -f ~/.android/adbkey ~/.android/adbkey.pub; adb start-server >/dev/null 2>&1"
-    
-    if [ -f "$USER_HOME/.android/adbkey.pub" ]; then
-        cp "$USER_HOME/.android/adbkey" "$ADB_PRIV_KEY"
-        cp "$USER_HOME/.android/adbkey.pub" "$ADB_PUB_KEY"
-    else
-        openssl genrsa -out "$ADB_PRIV_KEY" 2048 2>/dev/null
-        openssl rsa -in "$ADB_PRIV_KEY" -pubout -out "$ADB_PUB_KEY" 2>/dev/null
+chmod 0700 "$VAULT_DIR"
+if [ ! -f "$ADB_PRIV_KEY" ]; then
+    if [ -e "$ADB_PUB_KEY" ]; then
+        echo "Public key exists without its private key; restore the pair." >&2
+        exit 1
     fi
+    (umask 077; adb keygen "$ADB_PRIV_KEY")
+elif [ ! -s "$ADB_PUB_KEY" ]; then
+    adb pubkey "$ADB_PRIV_KEY" > "$ADB_PUB_KEY"
 fi
-
-chown -R "$TARGET_USER:$TARGET_USER" "$VAULT_DIR"
 chmod 0600 "$ADB_PRIV_KEY"
 chmod 0644 "$ADB_PUB_KEY"
-echo "    -> Golden Key Vault ready at $VAULT_DIR"
 
 # ==========================================
 # Phase 2: Set Up Temporary Workspace
@@ -104,7 +119,7 @@ TEMP_DIR=$(mktemp -d)
 echo "[*] Created temporary workspace at $TEMP_DIR"
 
 # Ensure cleanup happens even if the script exits abruptly
-trap 'echo "[*] Cleaning up workspace..."; cd "$ORIG_DIR"; rm -rf "$TEMP_DIR"; umount "$MOUNT_DIR" 2>/dev/null; rmdir "$MOUNT_DIR" 2>/dev/null' EXIT
+trap 'echo "[*] Cleaning up workspace..."; cd "$ORIG_DIR"; rm -rf "$TEMP_DIR"' EXIT
 
 cd "$TEMP_DIR" || exit 1
 
@@ -115,13 +130,17 @@ echo "[*] Extracting Magisk tools from $MAGISK_APK..."
 unzip -q -o -j "$ORIG_DIR/$MAGISK_APK" "assets/boot_patch.sh" -d .
 unzip -q -o -j "$ORIG_DIR/$MAGISK_APK" "assets/util_functions.sh" -d .
 unzip -q -o -j "$ORIG_DIR/$MAGISK_APK" "assets/stub.apk" -d .
-unzip -q -o -j "$ORIG_DIR/$MAGISK_APK" "lib/arm64-v8a/libmagiskboot.so" -d .
+if [ "$HOST_OS" = Darwin ]; then
+    cp "$MAGISKBOOT" magiskboot
+else
+    unzip -q -o -j "$ORIG_DIR/$MAGISK_APK" "lib/$HOST_ABI/libmagiskboot.so" -d .
+    mv libmagiskboot.so magiskboot
+fi
 unzip -q -o -j "$ORIG_DIR/$MAGISK_APK" "lib/arm64-v8a/libmagiskinit.so" -d .
 unzip -q -o -j "$ORIG_DIR/$MAGISK_APK" "lib/arm64-v8a/libmagisk64.so" -d .
 unzip -q -o -j "$ORIG_DIR/$MAGISK_APK" "lib/armeabi-v7a/libmagisk32.so" -d .
 
 echo "[*] Renaming and setting permissions for binaries..."
-mv -f libmagiskboot.so magiskboot
 mv -f libmagiskinit.so magiskinit
 mv -f libmagisk64.so magisk64
 mv -f libmagisk32.so magisk32
@@ -129,9 +148,14 @@ chmod +x boot_patch.sh magiskboot magiskinit magisk64 magisk32
 
 cp -f "$ORIG_DIR/$MAGISK_APK" magisk.apk
 
-# Hard-patch util_functions.sh to force standard output (1) instead of the broken O33 variable
-sed -i 's/>&${O33}/>\&1/g' util_functions.sh
-sed -i 's/>& $O33/>\&1/g' util_functions.sh
+# Portable replacement for GNU sed -i; the upstream script expects an Android UI FD.
+python3 - <<'PYTHON'
+from pathlib import Path
+p = Path("util_functions.sh")
+text = p.read_text().replace('>&${O33}', '>&1').replace('>& $O33', '>&1')
+# Magisk's grep_prop uses dos2unix, which macOS does not ship.
+p.write_text(text.replace('| dos2unix |', r"| tr -d '\r' |"))
+PYTHON
 
 # ==========================================
 # Phase 4: Create getprop Stub (necessary for magisk tools used outside of a phone)
@@ -159,7 +183,7 @@ export KEEPFORCEENCRYPT=true
 export RECOVERYMODE=false
 export LEGACYSAR=false
 export PATCHVBMETAFLAG=false
-export PATH="$PATH:$PWD"
+export PATH="$PWD:$PATH"
 
 bash boot_patch.sh "$BOOT_IMG"
 
@@ -174,9 +198,10 @@ fi
 echo "[*] Unpacking patched image to inject payload..."
 ./magiskboot unpack new-boot.img >/dev/null
 
-echo "[*] Extracting ramdisk..."
+echo "[*] Staging ramdisk additions..."
 mkdir ramdisk_root && cd ramdisk_root
-cpio -idm < ../ramdisk.cpio 2>/dev/null
+# Stage only new files. magiskboot preserves existing archive ownership/modes;
+# extracting and rebuilding with the Mac user's UID would corrupt them.
 
 echo "[*] Creating Magisk overlay.d structure..."
 mkdir -p overlay.d/sbin
@@ -283,8 +308,14 @@ service bypass_kiosk /system/bin/sh /sbin/bypass_kiosk.sh
 EOF
 
 echo "[*] Repacking ramdisk..."
-find . | cpio -o -H newc > ../ramdisk.cpio 2>/dev/null
 cd ..
+./magiskboot cpio ramdisk.cpio \
+    "mkdir 0750 overlay.d" \
+    "mkdir 0750 overlay.d/sbin" \
+    "add 0640 overlay.d/adb_keys ramdisk_root/overlay.d/adb_keys" \
+    "add 0644 overlay.d/sbin/textlauncher.apk ramdisk_root/overlay.d/sbin/textlauncher.apk" \
+    "add 0755 overlay.d/sbin/bypass_kiosk.sh ramdisk_root/overlay.d/sbin/bypass_kiosk.sh" \
+    "add 0644 overlay.d/custom.rc ramdisk_root/overlay.d/custom.rc"
 
 echo "[*] Repacking final boot image..."
 ./magiskboot repack new-boot.img "$FINAL_OUT" >/dev/null
@@ -294,26 +325,11 @@ echo "[*] Repacking final boot image..."
 # ==========================================
 echo "[*] Running post-build integrity and safety checks..."
 
-if ! ./magiskboot verify "$FINAL_OUT"; then
-    echo "[!] FATAL: magiskboot structural verification failed! The image is corrupted."
-    exit 1
-else
-    echo "    -> Header and Signature Check: PASS"
-fi
-
+# magiskboot verify checks AVB 1.0 signatures, not structural integrity.
+# Re-unpack instead; this does not prove the image will boot on the device.
 mkdir verify_perms && cd verify_perms
 ../magiskboot unpack "../$FINAL_OUT" >/dev/null 2>&1
-INIT_PERMS=$(cpio -tv < ramdisk.cpio 2>/dev/null | grep -E "[[:blank:]]init$" | awk '{print $3, $4}')
-
-if [[ "$INIT_PERMS" == *"root root"* || "$INIT_PERMS" == *"0 0"* ]]; then
-    echo "    -> Internal Root Ownership: PASS ($INIT_PERMS)"
-else
-    echo "[!] FATAL: Internal file permissions are stripped or corrupted!"
-    echo "[!] The core init binary is owned by: $INIT_PERMS (Expected: root root)"
-    echo "[!] Aborting deployment."
-    cd ..
-    exit 1
-fi
+python3 "$SCRIPT_DIR/scripts/verify_ramdisk.py" ramdisk.cpio "$ADB_PUB_KEY"
 cd ..
 
 # ==========================================
@@ -322,20 +338,20 @@ cd ..
 if [ -f "$FINAL_OUT" ]; then
     mv "$FINAL_OUT" "$ORIG_DIR/$FINAL_OUT"
     
-    cat << EOF > "$ORIG_DIR/start.adb.sh"
-#!/bin/bash
-export ADB_VENDOR_KEYS="$ADB_PRIV_KEY"
-echo "[*] ADB_VENDOR_KEYS set to permanent vault key."
+    {
+        printf '#!/bin/bash\nset -e\nexport ADB_VENDOR_KEYS=%q\n' "$ADB_PRIV_KEY"
+        cat << 'EOF'
+echo "[*] Restarting ADB with the Tonal key."
 adb kill-server
 adb start-server
-echo "[*] ADB server restarted. Ready for connection."
+adb devices -l
 EOF
+    } > "$ORIG_DIR/start.adb.sh"
     chmod +x "$ORIG_DIR/start.adb.sh"
 
-    chown -R "$TARGET_USER:$TARGET_USER" "$ORIG_DIR/$FINAL_OUT" "$ORIG_DIR/start.adb.sh"
     
     echo "=========================================="
-    echo "[*] SUCCESS! Image verified and ready:"
+    echo "[*] SUCCESS! Image built; unpack and ownership checks passed:"
     echo "[*] Output Image: $ORIG_DIR/$FINAL_OUT"
     echo "[*] ADB Helper Script: $ORIG_DIR/start.adb.sh"
     echo "=========================================="

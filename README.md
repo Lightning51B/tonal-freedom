@@ -35,7 +35,7 @@ After this process, the hardware is yours again. Use it with a third-party app, 
 
 ### Equipment
 
-1. **A Debian-based Linux computer** — Raspberry Pi 4B/5 with Raspberry Pi OS, Ubuntu, or similar
+1. **A Mac (Apple Silicon or Intel), or a Debian-based Linux computer** — Mac users should start with [MACOS.md](MACOS.md) for native macOS setup.
 2. **[mtkclient](https://github.com/bkerler/mtkclient)** — fully installed and configured
 3. **Extended Torx security bit set** — you need a **#4 Torx bit** for the security screws (e.g., [LABEAR 10-Piece Set](https://www.amazon.com/dp/B0C5R5MGDF))
 4. **A drill**
@@ -58,13 +58,13 @@ After this process, the hardware is yours again. Use it with a third-party app, 
 
 1. Plug the micro-USB cable into the port on the Android SBC.
 2. *(Optional)* Route the cable through the holes in the top-left corner and close the panel back up with the security screws. Use Kapton tape to secure the cable so it does not get pinched.
-3. Connect the other end to your Linux computer.
+3. Connect the other end to your Mac or Linux computer.
 
 ### Step 3: Back Up Every Partition
 
 This is your only safety net. Skip this and you are on your own.
 
-1. Follow the [mtkclient installation instructions](https://github.com/bkerler/mtkclient/blob/main/README-INSTALL.md#for-debianubuntu-here-assuming-fresh-install).
+1. On macOS, follow [MACOS.md](MACOS.md). On Linux, follow the [mtkclient installation instructions](https://github.com/bkerler/mtkclient/blob/main/README-INSTALL.md#for-debianubuntu-here-assuming-fresh-install).
 2. Run the GUI:
    ```bash
    python mtk_gui.py
@@ -77,9 +77,12 @@ This is your only safety net. Skip this and you are on your own.
 
 1. **Copy** your `boot.bin` from the backups. Never touch the original.
 2. Place the copy in the same directory as `patcher.sh` (included in this repo).
-3. Run the patcher:
+3. Run the patcher (see [Mac setup](MACOS.md) first):
    ```bash
-   sudo bash patcher.sh
+   # macOS, without sudo:
+   bash patcher-macos.sh
+   # Debian/Linux:
+   bash patcher.sh
    ```
 4. If successful, you now have a `boot.patched.img` file.
 5. **Verify** that your virgin backups of every partition are intact and accessible.
@@ -113,6 +116,9 @@ This is your only safety net. Skip this and you are on your own.
 | File | Description |
 |------|-------------|
 | `patcher.sh` | Bash script that patches the boot image with Magisk, injects ADB keys, disables the kiosk, and installs a basic launcher |
+| `setup-macos.sh` | Build the native macOS boot-image tool from pinned upstream sources |
+| `patcher-macos.sh` | Alias for running the patcher natively on macOS |
+| `MACOS.md` | Mac installation, backup, patching, and connection instructions |
 | `GUIDE.md` | The full step-by-step jailbreak guide (this README covers the same ground) |
 | `README.md` | You are here |
 

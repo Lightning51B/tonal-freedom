@@ -7,8 +7,8 @@
 
 ## Equipment Needed
 
-1. **A Debian-based Linux computer:** A Raspberry Pi 4B or 5 running Raspberry Pi OS is recommended, but any Debian-based distribution (e.g., Ubuntu Linux) will work.
-2. **[mtkclient](https://github.com/bkerler/mtkclient):** Fully installed and set up on the Linux computer.
+1. **A Mac or Debian-based Linux computer:** For Apple Silicon or Intel Macs, follow [MACOS.md](MACOS.md) for installation and the Mac patching command. Linux users can use Raspberry Pi OS or Ubuntu.
+2. **[mtkclient](https://github.com/bkerler/mtkclient):** Fully installed and set up natively on your Mac or Linux computer.
 3. **Extended Torx security bit set:** Such as the [LABEAR 10-Piece Metric Tamper Hex Bit Set](https://www.amazon.com/dp/B0C5R5MGDF) (4-Inch S2 Steel Bits, H1.5–H8, 100mm reach, 1/4" shank). <img src="https://m.media-amazon.com/images/I/81E2O5iNeIL._AC_SX679_PIbundle-10,TopRight,0,0_SH20_.jpg" />
 4. **A drill**
 5. **A 3-foot micro-USB to USB-A cable**
@@ -46,13 +46,13 @@ The Android Single Board Computer features a micro-USB port, which serves as you
 
 1. Attach the micro-USB cable to the Android SBC.
 2. **(Optional)** Route the cable through the holes in the top-left corner of the device and close the cabinet using the 4 security screws. Tape the cable down securely using a non-flammable tape like **Kapton tape** to prevent it from getting pinched.
-3. Connect the other end of the cable to your Debian/Ubuntu Linux computer.
+3. Connect the other end of the cable to your Mac or Debian/Ubuntu Linux computer.
 
 ---
 
 ## Step 3: Backing Up Your Device (Critical Step)
 
-1. Ensure you have followed all [mtkclient installation instructions](https://www.google.com/search?q=https%3A%2F%2Fgithub.com%2Fbkerler%2Fmtkclient%2Fblob%2Fmain%2FREADME-INSTALL.md%23for-debianubuntu-here-assuming-fresh-install).
+1. Ensure you have followed all [mtkclient installation instructions](https://github.com/bkerler/mtkclient/blob/main/README-INSTALL.md).
 2. Open your terminal and run:
 ```bash
 python mtk_gui.py
@@ -73,9 +73,12 @@ python mtk_gui.py
 ## Step 4: Patching and Flashing
 
 1. Make a copy of your `boot.bin` image from your backups. **This is the only file you will be modifying.**
-2. Place the copy of `boot.bin` into the same folder as [patcher.sh](https://github.com/voided404/MagiskScripts/blob/main/patcher.sh).
+2. Place the copy of `boot.bin` into the same folder as this repository's [patcher.sh](patcher.sh).
 3. In your terminal, run:
 ```bash
+# macOS (without sudo; complete MACOS.md setup first):
+bash patcher-macos.sh
+# Debian/Linux:
 bash patcher.sh
 
 ```
