@@ -21,6 +21,11 @@
 # ==========================================
 set -euo pipefail
 
+if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != --prepare ]; }; then
+    echo "Usage: bash patcher.sh [--prepare]" >&2
+    exit 1
+fi
+
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 HOST_OS=$(uname -s)
 case "$HOST_OS" in
@@ -49,19 +54,21 @@ VAULT_DIR=$(cd "$VAULT_DIR" && pwd)
 ADB_PUB_KEY="$VAULT_DIR/adbkey.pub"
 ADB_PRIV_KEY="$VAULT_DIR/adbkey"
 
-# Auto-detect whether the boot image is named .img or .bin
-if [ -f "boot.img" ]; then
-    BOOT_IMG="boot.img"
-elif [ -f "boot.bin" ]; then
-    BOOT_IMG="boot.bin"
-else
-    echo "[!] Error: Neither boot.img nor boot.bin found in current directory."
-    exit 1
-fi
+if [ "${1:-}" != --prepare ]; then
+    # Auto-detect whether the boot image is named .img or .bin
+    if [ -f "boot.img" ]; then
+        BOOT_IMG="boot.img"
+    elif [ -f "boot.bin" ]; then
+        BOOT_IMG="boot.bin"
+    else
+        echo "[!] Error: Neither boot.img nor boot.bin found in current directory."
+        exit 1
+    fi
 
-if [ -e "$FINAL_OUT" ]; then
-    echo "Move the existing $FINAL_OUT before patching again." >&2
-    exit 1
+    if [ -e "$FINAL_OUT" ]; then
+        echo "Move the existing $FINAL_OUT before patching again." >&2
+        exit 1
+    fi
 fi
 
 if [ "$HOST_OS" = Darwin ]; then
@@ -111,6 +118,12 @@ elif [ ! -s "$ADB_PUB_KEY" ]; then
 fi
 chmod 0600 "$ADB_PRIV_KEY"
 chmod 0644 "$ADB_PUB_KEY"
+
+# Preparation is host-only: no boot image or connected device required.
+if [ "${1:-}" = --prepare ]; then
+    echo "APKs and dedicated ADB key ready; no device commands issued."
+    exit 0
+fi
 
 # ==========================================
 # Phase 2: Set Up Temporary Workspace
@@ -176,6 +189,8 @@ chmod +x getprop
 # ==========================================
 echo "[*] Copying boot image to temp workspace..."
 cp "$ORIG_DIR/$BOOT_IMG" .
+mkdir original_check
+(cd original_check && ../magiskboot unpack "../$BOOT_IMG" >/dev/null)
 
 echo "[*] Patching $BOOT_IMG with Magisk..."
 export KEEPVERITY=true
@@ -245,12 +260,31 @@ done
 
 # 2. Push ADB settings and force-restart adbd just in case
 mkdir -p /data/misc/adb
-cat /adb_keys >> /data/misc/adb/adb_keys
+if ! grep -q -F "$(cat /adb_keys)" /data/misc/adb/adb_keys 2>/dev/null; then
+    cat /adb_keys >> /data/misc/adb/adb_keys
+fi
 chmod 0640 /data/misc/adb/adb_keys
 chown system:shell /data/misc/adb/adb_keys
 settings put secure development_settings_enabled 1
 settings put secure adb_enabled 1
-setprop ctl.restart adbd
+# Reapply authenticated network ADB every boot, before restarting the daemon.
+# Read-only properties may already exist, so use Magisk's resetprop applet.
+setprop ctl.stop adbd
+setprop service.adb.tcp.port -1
+setprop persist.adb.tcp.port -1
+if [ ! -x /sbin/resetprop ] && [ -x /sbin/magisk ]; then
+    ln -s /sbin/magisk /sbin/resetprop
+fi
+/sbin/resetprop ro.adb.secure 1
+/sbin/resetprop ro.secure 1
+setprop service.adb.root 0
+if [ "$(getprop ro.adb.secure)" = 1 ] && [ "$(getprop ro.secure)" = 1 ]; then
+    setprop persist.adb.tcp.port 5555
+    setprop service.adb.tcp.port 5555
+else
+    echo "ADB authentication could not be enabled; leaving network ADB disabled."
+fi
+setprop ctl.start adbd
 
 # 3. Install TextLauncher ONLY if it is missing (using fast, safe pm path check)
 if [ -z "$(pm path ademar.textlauncher 2>/dev/null)" ]; then
@@ -280,13 +314,16 @@ cat << EOF > overlay.d/custom.rc
 on early-init
     # SeLinux Permissive via sysfs
     write /sys/fs/selinux/enforce 0
-    
+
+    # Never expose a persisted TCP listener before this boot's auth checks.
+    setprop service.adb.tcp.port -1
+    setprop persist.adb.tcp.port -1
     setprop ro.debuggable 1
-    setprop ro.secure 0
-    setprop ro.adb.secure 0
+    setprop ro.secure 1
+    setprop ro.adb.secure 1
     setprop persist.sys.usb.config adb
     setprop sys.usb.config adb
-    setprop service.adb.root 1
+    setprop service.adb.root 0
 
 # Automatically destroy all Device Administrator policies before Android boots
 on post-fs-data
@@ -318,6 +355,7 @@ cd ..
     "add 0644 overlay.d/custom.rc ramdisk_root/overlay.d/custom.rc"
 
 echo "[*] Repacking final boot image..."
+python3 "$SCRIPT_DIR/scripts/verify_ramdisk.py" --normalize-xz ramdisk.cpio "$PWD/magiskboot"
 ./magiskboot repack new-boot.img "$FINAL_OUT" >/dev/null
 
 # ==========================================
@@ -329,15 +367,17 @@ echo "[*] Running post-build integrity and safety checks..."
 # Re-unpack instead; this does not prove the image will boot on the device.
 mkdir verify_perms && cd verify_perms
 ../magiskboot unpack "../$FINAL_OUT" >/dev/null 2>&1
-python3 "$SCRIPT_DIR/scripts/verify_ramdisk.py" ramdisk.cpio "$ADB_PUB_KEY"
+python3 "$SCRIPT_DIR/scripts/verify_ramdisk.py" ramdisk.cpio "$ADB_PUB_KEY" ../original_check/ramdisk.cpio \
+    "../$FINAL_OUT" "../$BOOT_IMG" ../patch-validation.json
 cd ..
 
 # ==========================================
 # Phase 8: Final Outputs & Helper Generation
 # ==========================================
 if [ -f "$FINAL_OUT" ]; then
+    mv patch-validation.json "$ORIG_DIR/patch-validation.json"
     mv "$FINAL_OUT" "$ORIG_DIR/$FINAL_OUT"
-    
+
     {
         printf '#!/bin/bash\nset -e\nexport ADB_VENDOR_KEYS=%q\n' "$ADB_PRIV_KEY"
         cat << 'EOF'
@@ -349,7 +389,7 @@ EOF
     } > "$ORIG_DIR/start.adb.sh"
     chmod +x "$ORIG_DIR/start.adb.sh"
 
-    
+
     echo "=========================================="
     echo "[*] SUCCESS! Image built; unpack and ownership checks passed:"
     echo "[*] Output Image: $ORIG_DIR/$FINAL_OUT"

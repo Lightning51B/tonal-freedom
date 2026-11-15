@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+BIN=$(cd "$(dirname "$0")" && pwd)
+exec "$BIN/../runtime/tonal-runtime" python "$@"

@@ -1,0 +1,210 @@
+{
+  "observed_date": "2026-11-15",
+  "service_version": "4.16.2-hercules-release",
+  "trainer_version": "26.44.0-431-150839-RC-trainer-hercules-release",
+  "evidence": "APK definitions plus on-device persisted LaunchDarkly cache; not active-memory or firmware capability verification",
+  "cached_flag": {
+    "key": "ControlModesAllowedClassic",
+    "flagVersion": 5,
+    "version": 387
+  },
+  "control_modes": [
+    {
+      "name": "CONTROL_MODE_OFF",
+      "id": 0,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_INIT",
+      "id": 1,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_ERROR",
+      "id": 2,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_FATAL",
+      "id": 3,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_WEIGHT",
+      "id": 10,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_STRENGTH_CAL",
+      "id": 11,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_LIFECYCLE_WEIGHT_LIFT",
+      "id": 12,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_LIFECYCLE_ANCHOR_PULL",
+      "id": 13,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_ISOKINETIC",
+      "id": 14,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_SUSPENSION",
+      "id": 15,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_PROGRESSIVE_STRENGTH_CAL",
+      "id": 16,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_BALL_WHACK",
+      "id": 17,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_SPEED",
+      "id": 18,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_COGGING_MAP",
+      "id": 19,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_SELF_VERIFICATION",
+      "id": 20,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_WEIGHT_HOLD",
+      "id": 21,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_HARDWARE_MODE",
+      "id": 22,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_CAM_MODE",
+      "id": 23,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_FLYWHEEL",
+      "id": 24,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_BOOST_WEIGHT",
+      "id": 25,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_PILATES",
+      "id": 26,
+      "cached_allowed": true,
+      "hardware_verified": false
+    },
+    {
+      "name": "CONTROL_MODE_PT_ISOMETRIC",
+      "id": 27,
+      "cached_allowed": true,
+      "hardware_verified": false
+    }
+  ],
+  "rom_profiles": [
+    {
+      "name": "ROM_WEIGHT_MODE_BELL_WITH_ECC",
+      "id": 1
+    },
+    {
+      "name": "ROM_WEIGHT_MODE_CHAINS",
+      "id": 0
+    },
+    {
+      "name": "ROM_WEIGHT_MODE_CHAINS_WITH_ECC",
+      "id": 3
+    },
+    {
+      "name": "ROM_WEIGHT_MODE_ECC_REDUCTION",
+      "id": 8
+    },
+    {
+      "name": "ROM_WEIGHT_MODE_FLAT_WITH_ECC",
+      "id": 4
+    },
+    {
+      "name": "ROM_WEIGHT_MODE_PERTURBATION",
+      "id": 6
+    },
+    {
+      "name": "ROM_WEIGHT_MODE_QUADRATIC_ASCENDING_WITH_ECC",
+      "id": 5
+    },
+    {
+      "name": "ROM_WEIGHT_MODE_REV_CHAINS",
+      "id": 7
+    },
+    {
+      "name": "ROM_WEIGHT_MODE_REV_CHAINS_WITH_ECC",
+      "id": 2
+    }
+  ],
+  "spotter_modes_from_command_schema": [
+    {
+      "name": "AUTOSPOTTER_BURNOUT",
+      "id": 1
+    },
+    {
+      "name": "AUTOSPOTTER_DISABLE",
+      "id": 0
+    },
+    {
+      "name": "AUTOSPOTTER_DROPSET",
+      "id": 4
+    },
+    {
+      "name": "AUTOSPOTTER_DROPSET_RESEARCH_STUDY",
+      "id": 3
+    },
+    {
+      "name": "AUTOSPOTTER_SINGLE_REP",
+      "id": 2
+    }
+  ],
+  "notes": [
+    "Identifiers occupy separate namespaces. Do not interchange motor mode, ROM profile, and spotter IDs.",
+    "MotorSampleEvent legacy AUTOSPOTTER_DROPSET=3 conflicts with current MassProfileSet and trainer DropSet=4; preserve raw feedback until tested.",
+    "Enum presence or cached allowance does not authorize sending a mode or establish compatibility."
+  ]
+}
