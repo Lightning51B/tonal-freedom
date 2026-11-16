@@ -1,0 +1,150 @@
+{
+  "summary_schema_version": 1,
+  "complete": true,
+  "record_count": 274,
+  "duration_observed_ms": 5040,
+  "lifecycle_counts": {
+    "bind_requested": 1,
+    "capture_finished": 1,
+    "capture_started": 1,
+    "connected": 1,
+    "message": 266,
+    "registered": 1,
+    "state": 1,
+    "unbound": 1,
+    "unregistered": 1
+  },
+  "service_states": [
+    1
+  ],
+  "message_counts": {
+    "4120": 5,
+    "4128": 1,
+    "4129": 1,
+    "4130": 7,
+    "4131": 1,
+    "4132": 250,
+    "4141": 1
+  },
+  "motor_sample_count": 250,
+  "motor_arrival_gap_ms": {
+    "median": 20,
+    "max": 25
+  },
+  "transport_stats": [],
+  "device_info": [
+    {
+      "identifier": 1,
+      "firmware_version": "5.2.18.0",
+      "hardware_revision": "001",
+      "part_number": "500-0102",
+      "bootloader_version": "1.1.1.1"
+    },
+    {
+      "identifier": 2,
+      "firmware_version": "2.18.0.0",
+      "hardware_revision": "001",
+      "part_number": "500-1200",
+      "bootloader_version": "1.1.4.1"
+    },
+    {
+      "identifier": 3,
+      "firmware_version": "3.7.2.0",
+      "hardware_revision": "003",
+      "part_number": "500-0200",
+      "bootloader_version": "1.2.3.1"
+    },
+    {
+      "identifier": 4,
+      "firmware_version": "3.7.2.0",
+      "hardware_revision": "003",
+      "part_number": "500-0200",
+      "bootloader_version": "1.2.3.1"
+    },
+    {
+      "identifier": 6,
+      "firmware_version": "3.7.2.0",
+      "hardware_revision": "002",
+      "part_number": "500-1100",
+      "bootloader_version": "1.2.3.1"
+    },
+    {
+      "identifier": 5,
+      "firmware_version": "3.7.2.0",
+      "hardware_revision": "003",
+      "part_number": "500-0300",
+      "bootloader_version": "1.2.3.1"
+    },
+    {
+      "identifier": 5,
+      "firmware_version": "0.0.0.0",
+      "hardware_revision": "003",
+      "part_number": "500-0300",
+      "bootloader_version": "0.0.0.0"
+    }
+  ],
+  "mass_profiles": [
+    {
+      "control_mode": 10,
+      "location": 2,
+      "base_weight_lbs": 5,
+      "ecc_weight_lbs": 0,
+      "rom_weight_lbs": 0,
+      "rom_weight_mode": 0,
+      "spotter_mode": 0,
+      "number_reps": 0,
+      "outward_speed_ips": 0,
+      "inward_speed_ips": 0
+    }
+  ],
+  "observed_motor_states": {
+    "control_mode": [
+      10
+    ],
+    "rom_weight_mode": [
+      0
+    ],
+    "spotter_mode": [
+      0
+    ],
+    "rep_phase": [
+      0
+    ],
+    "rep_alg_phase": [
+      0
+    ],
+    "is_racked": [
+      true
+    ],
+    "is_grounded": [
+      true
+    ]
+  },
+  "observed_motor_ranges": {
+    "base_weight_applied_lbs": {
+      "min": 5,
+      "max": 5
+    },
+    "ecc_weight_applied_lbs": {
+      "min": 0,
+      "max": 0
+    },
+    "total_weight_applied_lbs": {
+      "min": 5,
+      "max": 5
+    },
+    "rep_count": {
+      "min": 0,
+      "max": 0
+    },
+    "position_cable_left_in": {
+      "min": 0,
+      "max": 0
+    },
+    "position_cable_right_in": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  "interpretation": "Callback receipt proves observation access only; no motor commands or physical behavior are validated."
+}

@@ -1,0 +1,45 @@
+{
+  "summary_schema_version": 1,
+  "complete": true,
+  "record_count": 10,
+  "duration_observed_ms": 28072,
+  "lifecycle_counts": {
+    "bind_requested": 1,
+    "capture_finished": 1,
+    "capture_started": 1,
+    "connected": 1,
+    "message": 2,
+    "registered": 1,
+    "state": 1,
+    "unbound": 1,
+    "unregistered": 1
+  },
+  "service_states": [
+    0
+  ],
+  "message_counts": {
+    "4147": 2
+  },
+  "motor_sample_count": 0,
+  "motor_arrival_gap_ms": null,
+  "transport_stats": [
+    {
+      "component_type": 1,
+      "bytes_received": 0,
+      "bytes_sent": 0,
+      "rx_failures": 0,
+      "rx_bytes_dropped": 0,
+      "tx_bytes_dropped": 0
+    },
+    {
+      "component_type": 2,
+      "bytes_received": 0,
+      "bytes_sent": 0,
+      "rx_failures": 0,
+      "rx_bytes_dropped": 0,
+      "tx_bytes_dropped": 0
+    }
+  ],
+  "device_info": [],
+  "interpretation": "Callback receipt proves observation access only; no motor commands or physical behavior are validated."
+}

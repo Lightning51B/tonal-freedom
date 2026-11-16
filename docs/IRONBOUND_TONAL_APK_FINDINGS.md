@@ -1,6 +1,6 @@
 # IRONBOUND Tonal APK evaluation
 
-Evaluated November 15, 2026. IRONBOUND remains an independent Android application with its own campaign, progression, movement demonstrations, and workout interface.
+Evaluated November 15, 2026. Subsequent physical-device results are recorded in [hardware validation](IRONBOUND_HARDWARE_VALIDATION.md): independent observation, approximately 50 Hz idle samples and MCB firmware 5.2.18.0 are now verified; loaded modes and independent control are not. IRONBOUND remains an independent Android application with its own campaign, progression, movement demonstrations, and workout interface.
 
 The full product scope is all training modes supported by this original Tonal. See [the complete mode evaluation](IRONBOUND_TONAL_MODES.md) and [identifier catalog](IRONBOUND_TONAL_MODE_CATALOG.json). The backed-up software provides strong evidence for local workout telemetry and configurable resistance profiles. It does **not** establish that an independently signed app can safely control this particular machine. The recommended first integration is a telemetry observer, followed by separately validated motor control.
 
@@ -97,7 +97,9 @@ This preserves an independent app while initially reusing the installed hardware
 
 The service itself contains Sentry initialization and Firehose logging integration; Sentry events attach the tablet serial as user ID. A local Binder integration does not establish that the machine is offline or that vendor telemetry stops. IRONBOUND can keep its own records local, but service network behavior needs a separate runtime check if full offline operation is a requirement.
 
-## Next hardware validation
+## Original proposed hardware validation
+
+Superseded by the [subscription-free validation sequence](IRONBOUND_HARDWARE_VALIDATION.md#revised-validation-sequence-without-a-subscription). The user cannot run paid stock workouts; steps 3–4 below are historical proposals, not prerequisites.
 
 1. Use the existing ADB server on port 5038. Android API/ABI and active APK versions are now verified; live APK hashes and board/firmware information remain to be recorded. Retain serial identifiers locally and redact shared captures.
 2. Install a separately signed observation-only probe. Bind explicitly, read state, register the named listener, timestamp events locally, then unregister cleanly. Account for the service's device-information request during registration. Do not submit resistance, rack, firmware, or diagnostic-test commands.

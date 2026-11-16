@@ -2,6 +2,8 @@
 
 Scope: all training modes supported by the user's original Tonal, with IRONBOUND remaining an independent Android app. Evaluated November 15, 2026 using the backed-up MCB 4.16.2 and trainer 26.44.0 APKs and read-only ADB access through server port 5038.
 
+See [subsequent hardware validation](IRONBOUND_HARDWARE_VALIDATION.md) for the successful independent telemetry probe, firmware inventory and idle/racked observations. Full physical mode-validation statuses remain unverified.
+
 ## Device evidence
 
 The device's persisted LaunchDarkly cache contains `ControlModesAllowedClassic`, flagVersion 5, version 387, with all **22** defined motor states/modes enabled. The recovered service selects this flag for Classic branches including T1_0 and T800. The cache also contains Tahoe flags; that does not identify this device as Tahoe.
@@ -96,7 +98,7 @@ Use the existing telemetry interface across every mode family. For weight-based 
 
 Campaign progression and workout feedback must suit the mode: rep/tempo/ROM for weight training, validated resistance behavior for flywheel/Pilates, and duration/force metrics for isometric trials. Keep prescribed demo animation separate from measured movement; cable telemetry is not full-body form tracking.
 
-Hardware validation must cover each feature and its supported combinations. Observe stock-app operation first; record requested/profile values against applied feedback, transitions, termination, connection loss, and accessory weight-off behavior. Independently controlled modes additionally require verified exclusive ownership and stop behavior. No mode is marked working merely because its cached flag is true.
+Hardware validation must cover each feature and its supported combinations. The user has no subscription, so stock workouts are not a prerequisite; follow the revised independent-control sequence in the hardware validation report. Record requested/profile values against applied feedback, transitions, termination, connection loss, and accessory weight-off behavior. Independently controlled modes additionally require verified exclusive ownership and stop behavior. No mode is marked working merely because its cached flag is true.
 
 IRONBOUND retains its own APK, UI, assets, campaign state and storage. Reusing the installed MCB service is a local hardware integration, not a fork of the trainer. Full mode support remains the product scope; this evaluation does not claim it has been implemented or physically tested.
 
